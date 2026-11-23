@@ -9,7 +9,7 @@ import os
 /// private function in PreferencePanesSupport.framework.
 @MainActor
 enum ScrollDirection {
-    /// Posted by macOS (and by Deskflip) whenever the setting changes.
+    /// Posted by System Settings and by Deskflip when the setting changes.
     static let didChangeNotification = Notification.Name("SwipeScrollDirectionDidChangeNotification")
 
     private static let defaultsKey = "com.apple.swipescrolldirection"
@@ -35,8 +35,10 @@ enum ScrollDirection {
     /// Whether natural scrolling is on. A missing value means the macOS default, which is on.
     static var isNatural: Bool {
         CFPreferencesAppSynchronize(kCFPreferencesAnyApplication)
-        let value = CFPreferencesCopyAppValue(defaultsKey as CFString, kCFPreferencesAnyApplication)
-        return (value as? NSNumber)?.boolValue ?? true
+        // Accepts booleans, numbers and "YES"/"NO" strings.
+        var isValid: DarwinBoolean = false
+        let value = CFPreferencesGetAppBooleanValue(defaultsKey as CFString, kCFPreferencesAnyApplication, &isValid)
+        return isValid.boolValue ? value : true
     }
 
     /// Whether a change takes effect right away instead of after the next login.

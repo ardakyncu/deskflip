@@ -44,7 +44,7 @@ cd deskflip
 make install
 ```
 
-`make install` builds the app, copies it to `~/Applications` and opens it. `make build` only builds `build/Deskflip.app`.
+`make install` builds the app, moves it to `~/Applications` and opens it. `make build` only builds `build/Deskflip.app`.
 
 ### First launch
 

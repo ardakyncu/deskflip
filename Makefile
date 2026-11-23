@@ -10,11 +10,14 @@ LSREGISTER  := /System/Library/Frameworks/CoreServices.framework/Frameworks/Laun
 build:
 	@./scripts/build-app.sh
 
-## install: build, copy to ~/Applications and open it
+## install: build, move to ~/Applications and open it
+# The bundle is moved, not copied, so Spotlight and Launch Services
+# only ever see one Deskflip.
 install: build quit
 	@mkdir -p "$(INSTALL_DIR)"
 	@rm -rf "$(INSTALLED)"
-	@ditto "$(APP)" "$(INSTALLED)"
+	@"$(LSREGISTER)" -u "$(APP)" 2>/dev/null || true
+	@mv "$(APP)" "$(INSTALLED)"
 	@"$(LSREGISTER)" -f "$(INSTALLED)"
 	@open "$(INSTALLED)"
 	@echo "Installed $(INSTALLED)"

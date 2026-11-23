@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          swift --version
+
+      - name: Build universal app
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          UNIVERSAL=1 VERSION="$VERSION" ./scripts/build-app.sh
+
+      - name: Verify app
+        run: |
+          lipo -archs build/Deskflip.app/Contents/MacOS/Deskflip
+          lipo build/Deskflip.app/Contents/MacOS/Deskflip -verify_arch arm64 x86_64
+          codesign --verify --strict build/Deskflip.app
+          plutil -p build/Deskflip.app/Contents/Info.plist
+
+      - name: Zip app
+        run: ditto -c -k --keepParent build/Deskflip.app "Deskflip-$VERSION.zip"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<EOF
+          Universal build for Apple silicon and Intel Macs, macOS 13 or later.
+
+          **Install:** unzip, move \`Deskflip.app\` to \`~/Applications\` and open it.
+
+          The app is not notarized. On first launch, right-click it and choose Open, or run:
+
+          \`\`\`
+          xattr -dr com.apple.quarantine ~/Applications/Deskflip.app
+          \`\`\`
+          EOF
+          gh release create "$GITHUB_REF_NAME" "Deskflip-$VERSION.zip" \
+            --title "Deskflip $VERSION" \
+            --notes-file notes.md \
+            --verify-tag

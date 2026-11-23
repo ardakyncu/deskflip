@@ -3,21 +3,25 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: macos-26
+    permissions:
+      contents: write
     steps:
       - name: Check out
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Show toolchain
         run: |
           sw_vers
+          xcodebuild -version
           swift --version
 
       - name: Build universal app
@@ -41,17 +45,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > notes.md <<EOF
-          Universal build for Apple silicon and Intel Macs, macOS 13 or later.
+          Universal build for Apple silicon and Intel Macs running macOS 13 or later.
 
-          **Install:** unzip, move \`Deskflip.app\` to \`~/Applications\` and open it.
+          ### Install
 
-          The app is not notarized. On first launch, right-click it and choose Open, or run:
+          1. Download \`Deskflip-$VERSION.zip\` below and unzip it.
+          2. Move \`Deskflip.app\` to your Applications folder and open it.
 
-          \`\`\`
-          xattr -dr com.apple.quarantine ~/Applications/Deskflip.app
+          Deskflip is not notarized by Apple, so macOS blocks it the first time you open it. To allow it, go to **System Settings → Privacy & Security** and click **Open Anyway**, or run:
+
+          \`\`\`bash
+          xattr -dr com.apple.quarantine /Applications/Deskflip.app
           \`\`\`
           EOF
           gh release create "$GITHUB_REF_NAME" "Deskflip-$VERSION.zip" \
             --title "Deskflip $VERSION" \
             --notes-file notes.md \
+            --generate-notes \
             --verify-tag

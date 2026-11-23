@@ -14,11 +14,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            // VoiceOver and keyboard users cannot right-click, so offer the menu as an action.
+            button.setAccessibilityCustomActions([
+                NSAccessibilityCustomAction(name: "Show Menu", target: self, selector: #selector(showMenuForAccessibility)),
+            ])
         }
 
         menu = makeMenu()
 
-        // Menu bar apps are never "active", so ask for delivery even while suspended.
+        // Menu bar apps are rarely the active app, so ask for delivery even while suspended.
         // Otherwise changes made in System Settings would only arrive much later.
         DistributedNotificationCenter.default().addObserver(
             self,
@@ -47,6 +51,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Attach the menu only while it is open, so a left-click keeps toggling.
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
+    }
+
+    @objc private func showMenuForAccessibility() -> Bool {
+        showMenu()
+        return true
     }
 
     @objc private func scrollDirectionDidChange(_ notification: Notification) {

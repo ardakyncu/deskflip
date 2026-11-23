@@ -125,7 +125,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         refresh()
-        openAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        switch SMAppService.mainApp.status {
+        case .enabled:
+            openAtLoginItem.state = .on
+        case .requiresApproval:
+            openAtLoginItem.state = .mixed
+        default:
+            openAtLoginItem.state = .off
+        }
     }
 
     func menuDidClose(_ menu: NSMenu) {
@@ -139,9 +146,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func openAtLoginItemClicked(_ sender: NSMenuItem) {
         let service = SMAppService.mainApp
         do {
-            if service.status == .enabled {
+            switch service.status {
+            case .enabled, .requiresApproval:
+                // Clicking a pending registration cancels it.
                 try service.unregister()
-            } else {
+            default:
                 try service.register()
             }
         } catch {
@@ -152,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if service.status == .requiresApproval {
             let openSettings = showAlert(
                 title: "Allow Deskflip to open at login",
-                message: "Turn on Deskflip in System Settings under General, Login Items.",
+                message: "Turn on Deskflip in the Login Items section of System Settings.",
                 buttons: ["Open System Settings", "Cancel"]
             )
             if openSettings == .alertFirstButtonReturn {

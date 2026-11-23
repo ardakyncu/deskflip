@@ -3,7 +3,7 @@
 #
 # Environment:
 #   UNIVERSAL=1   build one binary for both arm64 and x86_64
-#   VERSION=x.y.z override the bundle version (default 1.0.0)
+#   VERSION=x.y.z set the bundle version (default: the latest git tag)
 
 set -euo pipefail
 
@@ -11,8 +11,17 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Deskflip"
 BUNDLE_ID="io.github.ardakyncu.deskflip"
-VERSION="${VERSION:-1.0.0}"
 BUILD_DIR="build"
+
+if [[ -z "${VERSION:-}" ]]; then
+    VERSION="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+    VERSION="${VERSION#v}"
+    VERSION="${VERSION:-0.0.0}"
+fi
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "error: VERSION must look like 1.2.3, got '$VERSION'" >&2
+    exit 1
+fi
 APP_DIR="$BUILD_DIR/$APP_NAME.app"
 ICON_WORK_DIR="$BUILD_DIR/icon"
 
@@ -97,7 +106,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.utilities</string>
     <key>NSHumanReadableCopyright</key>
-    <string>MIT License</string>
+    <string>Copyright © 2026 ardakyncu. MIT License.</string>
 </dict>
 </plist>
 EOF
